@@ -1,0 +1,45 @@
+version: '3'
+services:
+  prysm-beacon-chain:
+    image: prysmaticlabs/prysm-beacon-chain:latest
+    restart: always
+    ports:
+      - "4000:4000" # Beacon Chain gRPC
+      - "8080:8080" # Beacon Chain REST
+      - "13000:13000" # P2P
+    volumes:
+      - /mnt/blockstore/eth:/data
+      - /mnt/blockstore/eth/prysm:/home/.eth2/beaconchaindata
+    command: 
+      - --execution-endpoint=http://geth:8551
+      - --jwt-secret=/data/jwt.hex
+      - --accept-terms-of-use
+    depends_on:
+      - geth
+  init:
+    image: alpine
+    command:
+      - /bin/sh
+      - -c
+      - |
+        chown -R 1000:1000 /data
+
+        echo "done grany data directory permission"
+    volumes:
+      - /mnt/blockstore/eth:/data
+  geth:
+    image: thorax/erigon:v2.40.1
+    restart: always
+    ports:
+      - "8545:8545" # WebSocket RPC
+      - "8551:8551"
+    volumes:
+      - /mnt/blockstore/eth:/data
+    command: 
+      - --datadir=/data
+      - --chain=mainnet
+      - --authrpc.port=8551
+      - --ws
+      - --http
+      - --authrpc.jwtsecret=/data/jwt.hex
+      - --prune=htcr
